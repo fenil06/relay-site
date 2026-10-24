@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Relay Routing Studio</title>
+<meta name="description" content="Relay is a visual lead-routing studio for ServiceNow Sales CRM. Draw the rules, test them on real leads, and switch them on safely.">
+<meta property="og:title" content="Relay Routing Studio">
+<meta property="og:description" content="Every new lead, to the right rep. A visual lead-routing studio for ServiceNow Sales CRM.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23285c46'/%3E%3Ctext x='15' y='45' font-family='Arial,sans-serif' font-weight='800' font-size='38' fill='%23ffffff'%3Er%3C/text%3E%3Ccircle cx='45' cy='42' r='5' fill='%23dbedaf'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&display=swap">
+<style>
+/* Layout: a SaaS landing page in the studio's own light look. White and cream surfaces, the dotted canvas as the
+   product shot, green kept for actions and the Live state. Story order: promise, problem, how it works, highlights,
+   full feature list, routing modes, who it's for, guardrails, FAQ, get started. */
+:root{
+  color-scheme:light;
+  --paper:#fafbf8; --surface:#ffffff; --canvas:#f1f3ee; --dot:#cdd6c8;
+  --ink:#24372f; --muted:#6c776f; --line:#e4e7e1;
+  --green:#285c46; --green-hover:#1e4936; --green-ink:#ffffff; --accent:#dbedaf; --mark:#89a16d;
+  --t-trigger-bg:#e9efdc; --t-trigger:#6e8242; --t-match-bg:#e8eeef; --t-match:#5c7f88;
+  --t-cond-bg:#f4ecd8; --t-cond:#a48434; --t-rr-bg:#eae8f3; --t-rr:#82709b;
+  --t-assign-bg:#e4eee7; --t-assign:#5b856b; --wire:#aab9a1;
+  --off-bg:#f3f4f0; --off-line:#e0e4dc; --off-ink:#5f6862;
+  --dry-bg:#eef3fb; --dry-line:#cfdcf1; --dry-ink:#2f5592;
+  --live-bg:#e9f3ec; --live-line:#c9e0d0; --live-ink:#285c46;
+  --warn-bg:#fff6e7; --warn-line:#e6c99d; --warn-ink:#895c29;
+  --display:'Manrope',ui-sans-serif,system-ui,sans-serif;
+  --body:'DM Sans',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.02em}
+p{margin:0}
+a{color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.icon{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+:focus-visible{outline:3px solid var(--mark);outline-offset:3px;border-radius:6px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border-radius:9px;font-weight:600;font-size:15px;text-decoration:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);transition:background .15s,border-color .15s}
+.btn:hover{border-color:#cfd6ca;background:var(--canvas)}
+.btn.primary{background:var(--green);border-color:var(--green);color:var(--green-ink)}
+.btn.primary:hover{background:var(--green-hover)}
+.btn.small{padding:8px 14px;font-size:14px}
+
+/* Top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(8px)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:12px}
+.wordmark{font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:-1px;text-decoration:none;line-height:1}
+.wordmark span{color:var(--mark)}
+.top nav{display:flex;align-items:center;gap:24px;font-size:14px;color:var(--muted)}
+.top nav a:not(.btn){text-decoration:none}
+.top nav a:not(.btn):hover{color:var(--ink)}
+
+/* Hero */
+.hero{padding-block:72px 40px}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:56px;align-items:center}
+.tag{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:550;padding:5px 12px 5px 6px;border-radius:999px;border:1px solid var(--line);background:var(--surface)}
+.tag b{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--accent);color:var(--ink)}
+.hero h1{font-size:clamp(36px,5vw,58px);font-weight:800;line-height:1.04;margin-top:20px}
+.hero h1 em{font-style:normal;color:var(--green)}
+.lede{margin-top:20px;font-size:18px;color:var(--muted);max-width:33em}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.fine{margin-top:16px;font-size:13px;color:var(--muted)}
+
+.board{margin:0;position:relative;border:1px solid var(--line);border-radius:16px;background-color:var(--canvas);background-image:radial-gradient(var(--dot) .9px,transparent .9px);background-size:18px 18px;overflow:hidden;box-shadow:0 30px 60px -30px #24372f33}
+.board-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--surface);font-size:13px}
+.board-bar strong{font-family:var(--display);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--live-line);background:var(--live-bg);color:var(--live-ink);white-space:nowrap}
+.pill i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.board svg{display:block;width:100%;height:auto}
+.n-card{fill:var(--surface);stroke:var(--line)}
+.n-title{font:600 13px var(--body);fill:var(--ink)}
+.n-sub{font:400 11px var(--body);fill:var(--muted)}
+.n-port{font:500 10px var(--body);fill:var(--muted)}
+.wire{stroke:var(--wire);stroke-width:1.6;fill:none}
+.wire.lit{stroke:var(--green);stroke-width:2.4;stroke-dasharray:7 5}
+@media (prefers-reduced-motion:no-preference){.wire.lit{animation:flow 1.4s linear infinite}}
+@keyframes flow{to{stroke-dashoffset:-24}}
+
+/* Fact strip: real product specifics, not invented metrics */
+
+/* Sections */
+section.band{padding-block:88px}
+section.band.alt{background:var(--surface);border-block:1px solid var(--line)}
+.section-head{max-width:680px;margin-bottom:44px}
+.section-head.center{margin-inline:auto;text-align:center}
+.section-head h2{font-size:clamp(28px,3.4vw,40px);font-weight:800;line-height:1.12;margin-top:12px}
+.section-head p{color:var(--muted);margin-top:14px;font-size:17px}
+
+/* Problem / solution */
+.versus{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.side{border:1px solid var(--line);border-radius:14px;padding:26px 28px;background:var(--paper)}
+.side.relay{background:var(--surface);border-color:var(--live-line)}
+.side h3{font-size:18px;display:flex;align-items:center;gap:10px}
+.side ul{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:12px}
+.side li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;font-size:15px}
+.side li .icon{width:16px;height:16px;margin-top:4px}
+.side.before li .icon{color:#a8735a}
+.side.relay li .icon{color:var(--green)}
+
+/* How it works: a real sequence, so it is numbered */
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;counter-reset:step}
+.steps li{position:relative;padding-top:56px;counter-increment:step}
+.steps li::before{content:counter(step);position:absolute;top:0;left:0;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font:700 15px var(--display);background:var(--surface);border:1px solid var(--line)}
+.steps li:not(:last-child)::after{content:"";position:absolute;top:19px;left:48px;right:-10px;border-top:1px dashed var(--wire)}
+.steps b{display:block;font-family:var(--display);font-size:18px}
+.steps p{margin-top:6px;font-size:15px;color:var(--muted)}
+
+/* Highlights: three rows, copy beside a small product snippet */
+.highlights{display:grid;gap:64px}
+.hl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:center}
+.hl:nth-child(even) .hl-copy{order:2}
+.hl h3{font-size:clamp(22px,2.4vw,28px);font-weight:800;line-height:1.2;margin-top:10px}
+.hl-copy p{margin-top:12px;color:var(--muted)}
+.ticks{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:8px;font-size:15px}
+.ticks li{display:flex;gap:10px;align-items:flex-start}
+.ticks .icon{width:16px;height:16px;margin-top:4px;color:var(--green)}
+.snip{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:20px;box-shadow:0 20px 40px -28px #24372f40;font-size:14px}
+.snip-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--line);font-weight:600}
+.trace{list-style:none;margin:0;padding:6px 0 0;display:grid}
+.trace li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.trace li:last-child{border-bottom:0}
+.trace .num{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:11px;background:var(--canvas);color:var(--t-assign)}
+.trace small{display:block;color:var(--muted);font-size:13px}
+.fieldrow{display:grid;gap:6px;margin-top:14px}
+.fieldrow label{font-size:12px;font-weight:600}
+.fake-input{border:1px solid var(--line);border-radius:7px;padding:9px 11px;background:#f6f7f3;color:var(--muted);display:flex;justify-content:space-between}
+.tooltip{display:inline-block;margin-top:10px;background:#253e2b;color:#fff;font-size:12px;padding:6px 9px;border-radius:6px}
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid #dce2d8;border-radius:9px;background:#f4f6f1;margin-top:14px}
+.seg span{padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;color:var(--muted)}
+.seg span.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px #1d33251f}
+.req{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+.req:first-of-type{margin-top:14px}
+.req .ok{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:#e2efe5;color:var(--green)}
+.req .ok .icon{width:12px;height:12px;stroke-width:2.2}
+.req span:last-child{margin-left:auto;color:var(--muted)}
+
+/* Full feature list */
+.stages{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px}
+.stage h3{display:flex;align-items:center;gap:10px;font-size:17px;padding-bottom:14px;border-bottom:2px solid var(--ink)}
+.feats{list-style:none;margin:0;padding:0;display:grid}
+.feat{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;padding-block:16px;border-bottom:1px solid var(--line)}
+.feat .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center}
+.feat .ic .icon{width:15px;height:15px}
+.feat b{display:block;font-weight:600;font-size:15px;line-height:1.35}
+.feat p{font-size:14px;color:var(--muted);margin-top:3px}
+.tone-trigger{background:var(--t-trigger-bg);color:var(--t-trigger)}
+.tone-match{background:var(--t-match-bg);color:var(--t-match)}
+.tone-cond{background:var(--t-cond-bg);color:var(--t-cond)}
+.tone-rr{background:var(--t-rr-bg);color:var(--t-rr)}
+.tone-assign{background:var(--t-assign-bg);color:var(--t-assign)}
+.tone-plain{background:var(--canvas);color:var(--muted)}
+
+/* Routing modes */
+.modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.mode{border:1px solid var(--m-line);background:var(--m-bg);color:var(--m-ink);border-radius:14px;padding:22px;display:grid;gap:10px;align-content:start}
+.mode .head{display:flex;align-items:center;gap:12px}
+.mode .badge{width:38px;height:38px;border-radius:50%;background:var(--surface);display:grid;place-items:center}
+.mode h3{font-size:20px}
+.mode p{font-size:14px;line-height:1.55}
+.m-off{--m-bg:var(--off-bg);--m-line:var(--off-line);--m-ink:var(--off-ink)}
+.m-dry{--m-bg:var(--dry-bg);--m-line:var(--dry-line);--m-ink:var(--dry-ink)}
+.m-live{--m-bg:var(--live-bg);--m-line:var(--live-line);--m-ink:var(--live-ink)}
+.notrun{margin-top:16px;display:flex;gap:12px;align-items:flex-start;padding:14px 18px;border-radius:12px;border:1px solid var(--warn-line);background:var(--warn-bg);color:var(--warn-ink);font-size:14px}
+.notrun .icon{margin-top:2px}
+
+/* Audiences */
+.roles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 40px}
+.role{border-top:2px solid var(--ink);padding-top:18px}
+.role b{font-family:var(--display);font-size:18px}
+.role p{margin-top:8px;color:var(--muted);font-size:15px}
+
+/* Guardrails */
+.guards{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:12px}
+.guard{display:flex;align-items:center;gap:10px;padding:14px 20px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.guard .icon{width:16px;height:16px;color:var(--green)}
+.guard b{font-family:var(--display);font-size:16px}
+
+/* FAQ */
+.faq{max-width:780px;margin-inline:auto;border-top:1px solid var(--line)}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 2px;font-family:var(--display);font-weight:700;font-size:17px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font:400 22px var(--body);color:var(--muted);transition:transform .2s}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq details p{padding:0 2px 20px;color:var(--muted);max-width:62ch}
+
+/* Get started */
+.start{border:1px solid var(--line);border-radius:20px;background:var(--surface);padding:48px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:48px;align-items:start;background-image:radial-gradient(var(--dot) .9px,transparent .9px);background-size:18px 18px;background-position:right top}
+.start h2{font-size:clamp(28px,3.2vw,38px);font-weight:800;line-height:1.12}
+.start .lede{font-size:16px}
+.checklist{list-style:none;margin:0;padding:0;display:grid;gap:12px;counter-reset:s}
+.checklist li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;counter-increment:s}
+.checklist li::before{content:counter(s);width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:700 13px var(--display);background:var(--canvas)}
+.checklist b{display:block;font-size:15px}
+.checklist span{font-size:14px;color:var(--muted)}
+
+footer{border-top:1px solid var(--line);background:var(--surface)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;padding-block:28px;font-size:13px;color:var(--muted)}
+footer nav{display:flex;gap:18px}
+footer nav a{text-decoration:none}
+footer .legal{flex-basis:100%;padding-top:14px;border-top:1px solid var(--line);font-size:12px}
+
+@media (max-width:980px){
+  .hero .wrap,.hl,.start{grid-template-columns:minmax(0,1fr)}
+  .hl:nth-child(even) .hl-copy{order:0}
+  .stages{grid-template-columns:repeat(2,minmax(0,1fr));gap:40px 28px}
+  .steps{grid-template-columns:repeat(2,minmax(0,1fr));gap:32px 20px}
+  .steps li::after{display:none}
+  .facts ul{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .start{padding:32px}
+}
+@media (max-width:760px){
+  .versus,.modes,.roles{grid-template-columns:minmax(0,1fr)}  .top nav a:not(.btn){display:none}
+  .hero{padding-block:44px 24px}
+  section.band{padding-block:60px}
+  .start{padding:24px}
+}
+@media (max-width:560px){.stages,.steps{grid-template-columns:minmax(0,1fr)}}
+</style>
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-13h-7l1-7Z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path d="m21 21-5-5 M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></symbol>
+  <symbol id="i-split" viewBox="0 0 24 24"><path d="M12 21v-6 M12 15c0-4-6-5-6-10 M12 15c0-4 6-5 6-10 M3 8l3-3 3 3 M15 8l3-3 3 3"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 7A8 8 0 1 0 21 14 M20 2v6h-6"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a7 7 0 0 0-14 0v2 M17 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a6 6 0 0 0-12 0v2 M14 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z M20 21v-2a6 6 0 0 0-3-5 M17 2a4 4 0 0 1 0 8"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24"><path d="M9 3h6v5H9z M2 16h6v5H2z M16 16h6v5h-6z M12 8v4 M5 16v-4h14v4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12 M6 18 18 6"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 4 12 8-12 8V4Z"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 11a9 9 0 1 1 2 7 M3 4v7h7 M12 7v5l3 2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path d="M6 10h12v11H6z M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M5 2h9l5 5v15H5V2Z M14 2v6h5 M8 13h8 M8 17h6"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5v14 M15 5v14"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4 M12 17h.01 M10.3 3.9 2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12 m-5-5 5 5 5-5 M4 16v5h16v-5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14 m-5-5 5 5-5 5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="wordmark" href="#top" aria-label="Relay, back to top">relay<span>.</span></a>
+    <nav aria-label="Page sections">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#modes">Routing</a>
+      <a href="#guardrails">Security</a>
+      <a href="#faq">FAQ</a>
+      <a class="btn primary small" href="#start">Get started</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="tag"><b>New</b> Built for ServiceNow Sales CRM</span>
+        <h1>Every new lead, to the <em>right rep</em>.</h1>
+        <p class="lede">Relay is a visual lead-routing studio that runs inside your ServiceNow instance. Sales ops draw the rules, test them on real leads, and switch them on safely. No scripts, no tickets to the platform team.</p>
+        <div class="cta-row">
+          <a class="btn primary" href="#start">Get started <svg class="icon"><use href="#i-arrow"/></svg></a>
+          <a class="btn" href="#how">See how it works</a>
+        </div>
+        <p class="fine">Start in Dry run. Nothing is assigned until you go Live.</p>
+      </div>
+
+      <figure class="board" aria-label="Example routing workflow in the Relay canvas">
+        <div class="board-bar">
+          <strong>Inbound lead routing</strong>
+          <span class="pill"><i></i>Live · Version 8</span>
+        </div>
+        <svg viewBox="0 0 520 370" role="img" aria-label="Lead trigger, then Match account. An owner found goes to Assign owner; no eligible owner goes to Round robin.">
+          <path class="wire lit" d="M260 82 C260 104 260 104 260 122"/>
+          <path class="wire lit" d="M220 186 C220 222 130 210 130 248"/>
+          <path class="wire" d="M300 186 C300 222 390 210 390 248"/>
+          <text class="n-port" x="152" y="216">Owner available</text>
+          <text class="n-port" x="318" y="216">No eligible owner</text>
+          <g transform="translate(160 20)">
+            <rect class="n-card" width="200" height="62" rx="10"/>
+            <rect x="12" y="15" width="32" height="32" rx="8" style="fill:var(--t-trigger-bg)"/>
+            <use href="#i-bolt" x="20" y="23" width="16" height="16" class="icon" style="color:var(--t-trigger)"/>
+            <text class="n-title" x="56" y="29">Lead trigger</text>
+            <text class="n-sub" x="56" y="46">Created + Updated</text>
+          </g>
+          <g transform="translate(160 122)">
+            <rect class="n-card" width="200" height="64" rx="10" style="stroke:var(--green);stroke-width:1.5"/>
+            <rect x="12" y="16" width="32" height="32" rx="8" style="fill:var(--t-match-bg)"/>
+            <use href="#i-search" x="20" y="24" width="16" height="16" class="icon" style="color:var(--t-match)"/>
+            <text class="n-title" x="56" y="30">Match account</text>
+            <text class="n-sub" x="56" y="47">Account · 1 condition</text>
+          </g>
+          <g transform="translate(30 248)">
+            <rect class="n-card" width="200" height="62" rx="10"/>
+            <rect x="12" y="15" width="32" height="32" rx="8" style="fill:var(--t-assign-bg)"/>
+            <use href="#i-user" x="20" y="23" width="16" height="16" class="icon" style="color:var(--t-assign)"/>
+            <text class="n-title" x="56" y="29">Assign owner</text>
+            <text class="n-sub" x="56" y="46">Keep the account owner</text>
+          </g>
+          <g transform="translate(290 248)">
+            <rect class="n-card" width="200" height="62" rx="10"/>
+            <rect x="12" y="15" width="32" height="32" rx="8" style="fill:var(--t-rr-bg)"/>
+            <use href="#i-rotate" x="20" y="23" width="16" height="16" class="icon" style="color:var(--t-rr)"/>
+            <text class="n-title" x="56" y="29">Round robin</text>
+            <text class="n-sub" x="56" y="46">Inbound reps pool</text>
+          </g>
+          <text class="n-sub" x="30" y="345">Highlighted: the path a test lead took</text>
+        </svg>
+      </figure>
+    </div>
+  </section>
+
+
+  <section class="band">
+    <div class="wrap">
+      <div class="section-head center">
+        <div class="eyebrow">Why Relay</div>
+        <h2>Lead routing shouldn't live in scripts nobody can read</h2>
+        <p>Most teams route leads through a mix of assignment rules, flows and custom code. It works until someone needs to change it.</p>
+      </div>
+      <div class="versus">
+        <div class="side before">
+          <h3>Without Relay</h3>
+          <ul>
+            <li><svg class="icon"><use href="#i-x"/></svg><span>Routing logic is spread across rules, flows and scripts.</span></li>
+            <li><svg class="icon"><use href="#i-x"/></svg><span>Every change is a ticket to the platform team.</span></li>
+            <li><svg class="icon"><use href="#i-x"/></svg><span>You find out a rule is wrong after leads go to the wrong rep.</span></li>
+            <li><svg class="icon"><use href="#i-x"/></svg><span>Nobody can say which version of the rules is running.</span></li>
+          </ul>
+        </div>
+        <div class="side relay">
+          <h3>With <span class="wordmark" style="font-size:20px">relay<span>.</span></span></h3>
+          <ul>
+            <li><svg class="icon"><use href="#i-check"/></svg><span>One workflow you can see, on one canvas.</span></li>
+            <li><svg class="icon"><use href="#i-check"/></svg><span>Sales ops make the change, with a checkout so edits never collide.</span></li>
+            <li><svg class="icon"><use href="#i-check"/></svg><span>Test on sample and recent leads, then Dry run before anything is assigned.</span></li>
+            <li><svg class="icon"><use href="#i-check"/></svg><span>Every publish is a numbered version, and the status shows which one is live.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band alt" id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">How it works</div>
+        <h2>From idea to live routing in four steps</h2>
+      </div>
+      <ol class="steps">
+        <li><b>Design</b><p>Drag steps onto the canvas: trigger, account match, conditions, round robin and assignment.</p></li>
+        <li><b>Test</b><p>Run sample, custom or recent leads and watch the exact path each one takes.</p></li>
+        <li><b>Publish</b><p>Save an immutable version. Publishing never changes what is routing today.</p></li>
+        <li><b>Turn it on</b><p>Pick the version and start in Dry run. Go Live when the log looks right.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="section-head center">
+        <div class="eyebrow">Highlights</div>
+        <h2>Built for the people who own routing</h2>
+      </div>
+      <div class="highlights">
+        <article class="hl">
+          <div class="hl-copy">
+            <div class="eyebrow">Test before you trust</div>
+            <h3>See exactly where a lead would go, and why</h3>
+            <p>Every test returns a step-by-step trace and lights up the path on the canvas. Run it against your most recently changed leads without saving anything.</p>
+            <ul class="ticks">
+              <li><svg class="icon"><use href="#i-check"/></svg>Sample, custom and recent leads</li>
+              <li><svg class="icon"><use href="#i-check"/></svg>Test History keeps the last 30 runs</li>
+              <li><svg class="icon"><use href="#i-check"/></svg>Validation catches loops and unconnected branches</li>
+            </ul>
+          </div>
+          <div class="snip" aria-label="Example test trace">
+            <div class="snip-h"><span>Routing simulation · LEAD0002481</span><span class="pill">Would assign</span></div>
+            <ol class="trace">
+              <li><span class="num">1</span><div>Lead trigger<small>Lead is created and matches the conditions</small></div></li>
+              <li><span class="num">2</span><div>Match account<small>No eligible account owner</small></div></li>
+              <li><span class="num">3</span><div>Round robin<small>Next available rep in Inbound reps pool</small></div></li>
+              <li><span class="num">4</span><div>Finish<small>Routing outcome recorded</small></div></li>
+            </ol>
+          </div>
+        </article>
+
+        <article class="hl">
+          <div class="hl-copy">
+            <div class="eyebrow">One editor at a time</div>
+            <h3>Check out, change, publish. No collisions.</h3>
+            <p>Whoever checks out the workflow is the only person who can change it. Everyone else sees it read only, and every disabled control says why. Each publish becomes a version you can restore.</p>
+            <ul class="ticks">
+              <li><svg class="icon"><use href="#i-check"/></svg>Checkout history: who, what and when</li>
+              <li><svg class="icon"><use href="#i-check"/></svg>Admins can force-release, with a backup kept</li>
+              <li><svg class="icon"><use href="#i-check"/></svg>Immutable versions with one-click restore</li>
+            </ul>
+          </div>
+          <div class="snip" aria-label="Example read-only step panel">
+            <div class="snip-h"><span>Step details · Condition</span><span style="color:var(--muted);font-weight:500">Read only</span></div>
+            <div class="fieldrow"><label>Lead field</label><div class="fake-input">Country <svg class="icon" style="width:14px;height:14px"><use href="#i-chev"/></svg></div></div>
+            <div class="fieldrow"><label>Value</label><div class="fake-input">United States</div></div>
+            <span class="tooltip">Check out this workflow to change it.</span>
+          </div>
+        </article>
+
+        <article class="hl">
+          <div class="hl-copy">
+            <div class="eyebrow">Safe rollout</div>
+            <h3>Dry run first. Go Live when you're ready.</h3>
+            <p>Choose a version and a mode on one page. Relay shows a single, honest status and the exact requirements for that mode, so you always know what is happening.</p>
+            <ul class="ticks">
+              <li><svg class="icon"><use href="#i-check"/></svg>Dry run logs who it would assign and changes nothing</li>
+              <li><svg class="icon"><use href="#i-check"/></svg>Live needs a system administrator</li>
+              <li><svg class="icon"><use href="#i-check"/></svg>Recent activity with every run to inspect</li>
+            </ul>
+          </div>
+          <div class="snip" aria-label="Example Configurations page">
+            <div class="snip-h"><span>Configurations</span><span class="pill" style="border-color:var(--dry-line);background:var(--dry-bg);color:var(--dry-ink)"><i></i>Dry run · Version 8</span></div>
+            <div class="seg" role="presentation"><span>Off</span><span class="on">Dry run</span><span>Live</span></div>
+            <div class="req"><span class="ok"><svg class="icon"><use href="#i-check"/></svg></span><span>Published version</span><span>Version 8</span></div>
+            <div class="req"><span class="ok"><svg class="icon"><use href="#i-check"/></svg></span><span>Background job</span><span>Running every minute</span></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="band alt" id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">Features</div>
+        <h2>Everything in the studio</h2>
+        <p>Grouped by how you'll use it, from the first step on the canvas to the published version.</p>
+      </div>
+      <div class="stages">
+        <div class="stage">
+          <h3>Design</h3>
+          <ul class="feats">
+            <li class="feat"><span class="ic tone-plain"><svg class="icon"><use href="#i-flow"/></svg></span><div><b>Visual workflow canvas</b><p>Drag, connect, undo, redo and zoom.</p></div></li>
+            <li class="feat"><span class="ic tone-trigger"><svg class="icon"><use href="#i-bolt"/></svg></span><div><b>Native Lead conditions</b><p>Separate rules for created and updated leads, in ServiceNow's own condition builder.</p></div></li>
+            <li class="feat"><span class="ic tone-match"><svg class="icon"><use href="#i-search"/></svg></span><div><b>Account matching</b><p>Keep the eligible account owner on the lead.</p></div></li>
+            <li class="feat"><span class="ic tone-cond"><svg class="icon"><use href="#i-split"/></svg></span><div><b>Condition branches</b><p>Split on any Lead field: country, stage, source.</p></div></li>
+          </ul>
+        </div>
+        <div class="stage">
+          <h3>Assign</h3>
+          <ul class="feats">
+            <li class="feat"><span class="ic tone-rr"><svg class="icon"><use href="#i-rotate"/></svg></span><div><b>Round-robin pools</b><p>Even distribution across active, available reps.</p></div></li>
+            <li class="feat"><span class="ic tone-rr"><svg class="icon"><use href="#i-users"/></svg></span><div><b>Rep Pool management</b><p>Add, deactivate and review members.</p></div></li>
+            <li class="feat"><span class="ic tone-assign"><svg class="icon"><use href="#i-user"/></svg></span><div><b>Owner or group</b><p>Assign to the account owner, a user or an assignment group.</p></div></li>
+          </ul>
+        </div>
+        <div class="stage">
+          <h3>Test</h3>
+          <ul class="feats">
+            <li class="feat"><span class="ic tone-plain"><svg class="icon"><use href="#i-check"/></svg></span><div><b>Validate</b><p>Loops, gaps and missing settings flagged before publishing.</p></div></li>
+            <li class="feat"><span class="ic tone-plain"><svg class="icon"><use href="#i-play"/></svg></span><div><b>Test a lead</b><p>Trace plus a highlighted path on the canvas.</p></div></li>
+            <li class="feat"><span class="ic tone-plain"><svg class="icon"><use href="#i-search"/></svg></span><div><b>Recent leads</b><p>The latest version against your 10 most recently changed unassigned leads.</p></div></li>
+            <li class="feat"><span class="ic tone-plain"><svg class="icon"><use href="#i-history"/></svg></span><div><b>Test History</b><p>The last 30 simulations to inspect.</p></div></li>
+          </ul>
+        </div>
+        <div class="stage">
+          <h3>Publish</h3>
+          <ul class="feats">
+            <li class="feat"><span class="ic tone-plain"><svg class="icon"><use href="#i-lock"/></svg></span><div><b>Check out → Publish</b><p>One editor at a time; everyone else read only.</p></div></li>
+            <li class="feat"><span class="ic tone-plain"><svg class="icon"><use href="#i-file"/></svg></span><div><b>Versions</b><p>Immutable snapshots with restore.</p></div></li>
+            <li class="feat"><span class="ic tone-plain"><svg class="icon"><use href="#i-history"/></svg></span><div><b>Checkout history</b><p>Every checkout, publish and release.</p></div></li>
+            <li class="feat"><span class="ic tone-plain"><svg class="icon"><use href="#i-download"/></svg></span><div><b>Export</b><p>The workflow definition, for review.</p></div></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="modes">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">Routing</div>
+        <h2>One switch, three modes, one honest status</h2>
+        <p>Routing evaluates unassigned leads that change after you turn it on. Existing leads are never backfilled.</p>
+      </div>
+      <div class="modes">
+        <article class="mode m-off">
+          <div class="head"><span class="badge"><svg class="icon"><use href="#i-pause"/></svg></span><h3>Off</h3></div>
+          <p>Nothing is evaluated. Where every workflow starts.</p>
+        </article>
+        <article class="mode m-dry">
+          <div class="head"><span class="badge"><svg class="icon"><use href="#i-eye"/></svg></span><h3>Dry run</h3></div>
+          <p>Leads are evaluated and Relay logs who it would assign. Leads and round-robin turns are never changed.</p>
+        </article>
+        <article class="mode m-live">
+          <div class="head"><span class="badge"><svg class="icon"><use href="#i-bolt"/></svg></span><h3>Live</h3></div>
+          <p>Relay writes the owner or group with a conditional update, and records a conflict if the lead changed meanwhile.</p>
+        </article>
+      </div>
+      <div class="notrun" role="note">
+        <svg class="icon"><use href="#i-alert"/></svg>
+        <p><strong>Not running</strong> means a mode is on but something it needs is missing. The page names it and links admins straight to the fix.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band alt">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">Who it's for</div>
+        <h2>Built for the teams that live with the routing</h2>
+      </div>
+      <div class="roles">
+        <div class="role"><b>Sales operations</b><p>Own the routing rules yourself. Change a territory or a pool in minutes, test it, and publish without a development cycle.</p></div>
+        <div class="role"><b>Sales leaders</b><p>Fair round-robin distribution, account owners kept on their accounts, and a clear record of who got what.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="guardrails">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">Security and control</div>
+        <h2>Built to change as little as possible</h2>
+        <p>Relay reads what it needs from your instance and writes one field.</p>
+      </div>
+      <ul class="guards">
+        <li class="guard"><svg class="icon"><use href="#i-check"/></svg><b>One field written</b></li>
+        <li class="guard"><svg class="icon"><use href="#i-check"/></svg><b>Only new changes</b></li>
+        <li class="guard"><svg class="icon"><use href="#i-check"/></svg><b>Nothing is deleted</b></li>
+        <li class="guard"><svg class="icon"><use href="#i-check"/></svg><b>Private tables</b></li>
+        <li class="guard"><svg class="icon"><use href="#i-check"/></svg><b>Runs on the platform</b></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="band alt" id="faq">
+    <div class="wrap">
+      <div class="section-head center">
+        <div class="eyebrow">FAQ</div>
+        <h2>Questions teams ask first</h2>
+      </div>
+      <div class="faq">
+        <details open>
+          <summary>Will Relay reassign leads we already have?</summary>
+          <p>No. Routing only evaluates unassigned leads that change after you turn it on. Existing records are never backfilled.</p>
+        </details>
+        <details>
+          <summary>What exactly does Relay change on a lead?</summary>
+          <p>Only the Owner or Lead group field, and only in Live mode. Dry run logs the assignment it would make and changes nothing.</p>
+        </details>
+        <details>
+          <summary>Can two people edit the routing at the same time?</summary>
+          <p>No. One person checks out the workflow and is the only one who can change, publish or discard it. Everyone else sees it read only until it's published or released.</p>
+        </details>
+        <details>
+          <summary>What happens when no rep is eligible?</summary>
+          <p>The path you design decides. A typical flow keeps the account owner when one is eligible and falls back to a round-robin pool or an assignment group when not. Tests show the outcome before you publish.</p>
+        </details>
+        <details>
+          <summary>Does any data leave our instance?</summary>
+          <p>No. Relay runs entirely inside your ServiceNow instance, so your lead data stays where it already is.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="start">
+    <div class="wrap">
+      <div class="start">
+        <div>
+          <div class="eyebrow">Get started</div>
+          <h2 style="margin-top:12px">Start in Dry run. Go Live when the log looks right.</h2>
+          <p class="lede" style="margin-top:14px">Relay installs as a scoped application on ServiceNow Zurich with Sales CRM Lead Management. Your first workflow can be running in Dry run the same day.</p>
+        </div>
+        <ol class="checklist">
+          <li><div><b>Install the app</b><span>A system administrator installs the Relay scoped application.</span></div></li>
+          <li><div><b>Build your workflow</b><span>Open Relay, check out the Lead workflow and draw your routing.</span></div></li>
+          <li><div><b>Test and publish</b><span>Validate, test on recent leads, then publish Version 1.</span></div></li>
+          <li><div><b>Turn on Dry run</b><span>Watch who it would assign, then switch to Live.</span></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><b class="wordmark" style="font-size:18px">relay<span>.</span></b>&nbsp; Routing Studio</span>
+    <nav aria-label="Footer">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <p class="legal">ServiceNow is a trademark of ServiceNow, Inc. Relay is not affiliated with or endorsed by ServiceNow, Inc.</p>
+  </div>
+</footer>
+</body>
+</html>
